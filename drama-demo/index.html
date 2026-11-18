@@ -3,195 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>短劇嵌入組件 · 遊戲網站示範</title>
+<title>短劇嵌入組件 · 示範</title>
 <style>
-  :root{--bg:#0b0f1e;--panel:#121833;--panel2:#18204a;--line:#232c57;--text:#eef0ff;--muted:#8d95c7;--acc:#7c5cff;--acc2:#22d3ee}
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
-  a{color:inherit;text-decoration:none}
-  .demo-bar{background:#fff7d6;color:#5b4500;font-size:12.5px;padding:8px 16px;text-align:center;line-height:1.5}
-  .demo-bar b{font-weight:700}
-  header{display:flex;align-items:center;gap:22px;padding:14px 22px;border-bottom:1px solid var(--line);background:rgba(11,15,30,.9);position:sticky;top:0;z-index:5;backdrop-filter:blur(8px)}
-  .logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:17px;letter-spacing:.5px}
-  .logo i{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--acc2));display:block}
-  .logo small{font-weight:500;color:var(--muted);font-size:11px;margin-left:2px}
-  nav{display:flex;gap:18px;font-size:14px;color:var(--muted)}
-  nav a.on{color:var(--text)}
-  .me{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
-  .me i{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:block}
-  @media (max-width:720px){ nav{display:none} header{padding:12px 14px} }
-
-  main{max-width:1240px;margin:0 auto;padding:22px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:22px;align-items:start}
-  @media (max-width:899px){ main{grid-template-columns:minmax(0,1fr);padding:14px} aside{display:none} }
-
-  .game{background:var(--panel);border:1px solid var(--line);border-radius:18px;overflow:hidden}
-  .game-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
-  .game-head h2{margin:0;font-size:16px}
-  .badge{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--panel2);color:var(--acc2);border:1px solid var(--line)}
-  .arena{position:relative;height:440px;background:#fff}
-  @media (max-width:899px){ .arena{height:400px} }
-  canvas{position:absolute;inset:0;width:100%;height:100%}
-  .queue{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px}
-  .ring{width:110px;height:110px;border-radius:50%;border:3px solid rgba(124,92,255,.25);border-top-color:var(--acc);animation:spin 1.1s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .timer{position:absolute;font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-  .ringwrap{position:relative;display:grid;place-items:center}
-  .queue h3{margin:4px 0 0;font-size:20px}
-  .queue p{margin:0;color:var(--muted);font-size:14px}
-  .qbtns{display:flex;gap:10px;margin-top:6px}
-  .btn{border:0;border-radius:10px;padding:10px 18px;font:600 14px/1 inherit;cursor:pointer;color:#fff;background:var(--acc)}
-  .btn.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
-  .tip{font-size:12.5px;color:#c8bfff;background:rgba(124,92,255,.12);border:1px solid rgba(124,92,255,.3);padding:7px 12px;border-radius:10px}
-  .hud{position:absolute;left:16px;top:14px;font-size:13px;color:#cfd3ff;display:none}
-  .hud b{color:#fff}
-
-  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:16px 18px 18px}
-  .gcard{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-  .gcard b{display:block;font-size:14px;margin-bottom:4px}
-  .gcard span{font-size:12px;color:var(--muted)}
-  @media (max-width:600px){ .cards{grid-template-columns:1fr} }
-
-  aside .side-h{display:flex;justify-content:space-between;align-items:baseline;margin:2px 2px 10px}
-  aside .side-h b{font-size:15px}
-  aside .side-h span{font-size:12px;color:var(--muted)}
-  #dj-player{height:660px;border-radius:14px;background:#0d0d12}
-
-  .doc{max-width:1240px;margin:0 auto;padding:0 22px 40px}
-  @media (max-width:899px){ .doc{padding:0 14px 90px} }
-  .docbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px 20px}
-  .docbox h2{margin:0 0 4px;font-size:17px}
-  .docbox > p{margin:0 0 14px;color:var(--muted);font-size:13.5px;line-height:1.6}
-  .grid2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:18px}
-  @media (max-width:899px){ .grid2{grid-template-columns:minmax(0,1fr)} }
-  pre{margin:0;background:#070a16;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cfd6ff}
-  .k{color:#7dd3fc}.s{color:#fbbf24}.c{color:#6b7280}
-  .codehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;color:var(--muted)}
-  .copy{font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer}
-  .modes{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap}
-  .mode{font-size:13px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);cursor:pointer}
-  .mode.on{color:#fff;border-color:var(--acc);background:rgba(124,92,255,.2)}
-  ul.feat{margin:0;padding-left:18px;color:#cfd3ff;font-size:13.5px;line-height:1.9}
-  .log{margin-top:14px;background:#070a16;border:1px solid var(--line);border-radius:12px;padding:10px 12px;height:120px;overflow:auto;font:12px/1.7 ui-monospace,Menlo,monospace;color:#9fe7c4}
-  .log .t{color:#6b7280}
-  footer{text-align:center;color:#5d6596;font-size:11.5px;padding:0 16px 30px;line-height:1.7}
+  html,body{margin:0;min-height:100%;background:#fff}
+  /* 側欄模式用的容器：模擬網站主頁面上留給組件的位置 */
+  #dj-player{position:fixed;top:24px;right:24px;width:380px;height:min(660px,calc(100vh - 48px))}
+  @media (max-width:899px){ #dj-player{display:none} }
 </style>
 </head>
 <body>
-<div class="demo-bar"><b>功能示範</b>：「星港遊戲」是虛構的遊戲網站，用來展示網站主嵌入短劇組件後的效果。短劇來自 YouTube「盛世短剧」官方頻道，以 YouTube 官方播放器嵌入。</div>
-
-<header>
-  <div class="logo"><i></i>星港遊戲<small>示範站</small></div>
-  <nav><a class="on" href="#">對戰</a><a href="#">活動</a><a href="#">排行榜</a><a href="#">商城</a></nav>
-  <div class="me">Lv.27 夜行者<i></i></div>
-</header>
-
-<main>
-  <section class="game">
-    <div class="game-head"><h2>排位賽 · 3v3 星域爭奪</h2></div>
-    <div class="arena" aria-label="遊戲畫面"></div>
-    <div class="cards">
-      <div class="gcard"><b>本週活動</b><span>連勝 3 場送限定外觀</span></div>
-      <div class="gcard"><b>賽季排名</b><span>鑽石 II · 再 120 分晉級</span></div>
-      <div class="gcard"><b>好友在線</b><span>4 位好友正在對戰</span></div>
-    </div>
-  </section>
-
-  <aside>
-    <div class="side-h"><b>等待時看短劇</b><span>由嵌入組件提供</span></div>
-    <div id="dj-player"></div>
-  </aside>
-</main>
-
-<section class="doc">
-  <div class="docbox">
-    <h2>網站主怎麼嵌入</h2>
-    <p>貼上兩行代碼就能用。組件會依螢幕寬度自動切換：電腦版嵌在側欄，手機版變成右下角的浮動按鈕。開始遊戲時，網站可以呼叫 DJWidget.pause() 自動暫停短劇。影片用 YouTube 官方播放器播放，觀看次數和廣告收益歸原頻道。</p>
-    <div class="modes">
-      <button class="mode" data-hash="">側欄模式（預設）</button>
-      <button class="mode" data-hash="float">浮動按鈕模式</button>
-      <button class="mode" data-hash="autoplay">進站自動播放小窗</button>
-      <button class="mode" data-hash="single">單劇模式</button>
-    </div>
-    <div class="grid2">
-      <div>
-        <div class="codehead"><span>嵌入代碼</span><button class="copy" id="copy">複製</button></div>
-        <pre id="code"></pre>
-      </div>
-      <div>
-        <div class="codehead"><span>這個示範展示了</span></div>
-        <ul class="feat">
-          <li>中文 AI 短劇片單，來源為 YouTube 官方頻道</li>
-          <li>續看進度：下次打開從上次看到的地方繼續（不用登入）</li>
-          <li>保留 YouTube 播放器原本的功能與標示</li>
-          <li>看劇時下方推薦「接著看」</li>
-          <li>主題色跟著網站走（<code>data-accent</code>）</li>
-          <li>開始遊戲時可呼叫 <code>DJWidget.pause()</code> 自動暫停</li>
-          <li>網站可收到播放事件，用於統計</li>
-        </ul>
-        <div class="log" id="log"><span class="t">— 組件事件會顯示在這裡 —</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<footer>
-  示範片單：YouTube「盛世短剧」官方頻道（頻道標示為正版授權）的 AI 短劇合集，透過 YouTube 官方播放器嵌入。<br>
-  影片版權屬原權利人所有。本頁僅為功能展示，正式上線前由委託方確認內容授權。
-</footer>
-
+<div id="dj-player"></div>
 <script>
-(function(){
-  // ---------- 依網址 #float / #single 切換嵌入模式 ----------
-  const mode = location.hash.replace('#','');
-  document.querySelectorAll('.mode').forEach(b => {
-    b.classList.toggle('on', b.dataset.hash === mode);
-    b.onclick = () => { location.hash = b.dataset.hash; location.reload(); };
-  });
-  const attrs = { 'data-site': 'demo-starharbor', 'data-accent': '#7c5cff' };
-  if (mode === 'float') attrs['data-layout'] = 'float';
-  if (mode === 'autoplay') { attrs['data-autoplay'] = 'muted'; attrs['data-cooldown'] = '0.01'; }
-  if (mode === 'single') attrs['data-series'] = 'BUui7mO0ShA';
-  const isFloat = mode === 'float' || mode === 'autoplay' || window.innerWidth < 900;
-  document.querySelectorAll('.wide-only').forEach(e => e.style.display = isFloat ? 'none' : '');
-  document.querySelectorAll('.narrow-only').forEach(e => e.style.display = isFloat ? '' : 'none');
-  if (mode === 'float' || mode === 'autoplay') { const a = document.querySelector('aside'); a.style.display = 'none'; document.querySelector('main').style.gridTemplateColumns = 'minmax(0,1fr)'; }
-
-  // 實際載入組件（等同網站主貼上的 <script>）
-  const s = document.createElement('script');
-  s.src = 'widget/v1.js'; s.async = true;
-  Object.entries(attrs).forEach(([k,v]) => s.setAttribute(k, v));
-  document.body.appendChild(s);
-
-  // 顯示給網站主看的代碼
-  const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  let codeTxt = `<div id="dj-player"></div>\n<script async src="https://cdn.你的網域/widget/v1.js"\n  data-site="你的站點密鑰"\n  data-accent="#7c5cff"`;
-  if (attrs['data-layout']) codeTxt += `\n  data-layout="float"`;
-  if (attrs['data-autoplay']) codeTxt += `\n  data-autoplay="muted"\n  data-cooldown="12"`;
-  if (attrs['data-series']) codeTxt += `\n  data-series="BUui7mO0ShA"`;
-  codeTxt += `><\/script>\n\n<!-- 選用：開始遊戲時暫停短劇 -->\n<script>\n  onMatchFound(() => DJWidget.pause());\n<\/script>`;
-  document.getElementById('code').innerHTML = esc(codeTxt)
-    .replace(/(&lt;\/?[a-z]+|&gt;|\/&gt;)/g,'<span class="k">$1</span>')
-    .replace(/(".*?")/g,'<span class="s">$1</span>')
-    .replace(/(&lt;!--.*?--&gt;)/g,'<span class="c">$1</span>');
-  document.getElementById('copy').onclick = async e => {
-    try { await navigator.clipboard.writeText(codeTxt); e.target.textContent = '已複製'; }
-    catch(err) { e.target.textContent = '請手動選取'; }
-    setTimeout(() => e.target.textContent = '複製', 1500);
-  };
-
-  // ---------- 組件事件紀錄 ----------
-  const log = document.getElementById('log'); let first = true;
-  function addLog(t){ if (first) { log.innerHTML = ''; first = false; }
-    const d = new Date(); const ts = d.toTimeString().slice(0,8);
-    log.insertAdjacentHTML('afterbegin', `<div><span class="t">${ts}</span> ${t}</div>`); }
-  window.addEventListener('djw:ready', () => addLog('djw:ready　組件載入完成'));
-  window.addEventListener('djw:series', e => addLog(`djw:series　打開劇集 ${e.detail.id}`));
-  window.addEventListener('djw:play', e => addLog(`djw:play　開始播放 ${e.detail.id}`));
-  window.addEventListener('djw:pause', e => addLog(`djw:pause　暫停 ${e.detail.id}`));
-  window.addEventListener('djw:minimize', e => addLog(e.detail.dismissed ? 'djw:minimize　觀眾關掉自動播放小窗（冷卻期內不再自動播放）' : 'djw:minimize　觀眾收起播放器'));
-  window.addEventListener('djw:expand', () => addLog('djw:expand　觀眾展開小窗'));
-
-})();
+  // 網址 # 切換模式：（無）側欄 / #float 浮動按鈕 / #autoplay 進站自動播放小窗 / #single 單劇
+  (function () {
+    var mode = location.hash.replace('#', '');
+    addEventListener('hashchange', function () { location.reload(); });
+    var s = document.createElement('script');
+    s.src = 'widget/v1.js'; s.async = true;
+    s.setAttribute('data-site', 'demo');
+    s.setAttribute('data-accent', '#7c5cff');
+    if (mode === 'float') s.setAttribute('data-layout', 'float');
+    if (mode === 'autoplay') { s.setAttribute('data-autoplay', 'muted'); s.setAttribute('data-cooldown', '0.01'); }
+    if (mode === 'single') s.setAttribute('data-series', 'BUui7mO0ShA');
+    if (mode === 'float' || mode === 'autoplay') document.getElementById('dj-player').style.display = 'none';
+    document.body.appendChild(s);
+  })();
 </script>
 </body>
 </html>
