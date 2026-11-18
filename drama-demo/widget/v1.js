@@ -64,6 +64,17 @@
     '.meta .res{color:var(--acc)}',
     '.frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;flex:none}',
     '.frame iframe,.frame > div{position:absolute;inset:0;width:100%;height:100%;border:0}',
+    '.poster{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:hidden;background:#000;cursor:pointer}',
+    '.poster img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.72);transform:scale(1.02);transition:transform .4s,filter .3s}',
+    '.poster:hover img{transform:scale(1.05);filter:brightness(.82)}',
+    '.poster .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 40%,rgba(0,0,0,.75))}',
+    '.poster .pbtn{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;background:var(--acc);',
+    ' display:grid;place-items:center;box-shadow:0 6px 24px rgba(0,0,0,.45),0 0 0 6px rgba(255,255,255,.12);transition:transform .15s}',
+    '.poster:hover .pbtn{transform:scale(1.07)}',
+    '.poster .ptxt{position:absolute;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-between;align-items:flex-end;gap:8px;font-size:12px;color:#e8e8ef}',
+    '.poster .ptxt b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.poster .ptxt span{flex:none;background:rgba(0,0,0,.55);padding:2px 7px;border-radius:5px}',
+    '.poster .res{color:#fff;background:var(--acc)!important}',
     '.info{padding:12px 12px 4px}',
     '.info h3{margin:0 0 6px;font-size:16px;line-height:1.35}',
     '.src{font-size:12px;color:#9a9aab;margin-bottom:8px}',
@@ -125,7 +136,7 @@
   }
 
   function showShelf() {
-    pause();
+    destroyPlayer();
     var q = ui.q, prog = loadProg();
     q('.shelf').classList.remove('hidden'); q('.watch').classList.add('hidden');
     q('[data-act=back]').classList.add('hidden');
@@ -137,6 +148,7 @@
 
   function openSeries(id, userTap) {
     var s = CAT.series.filter(function (x) { return x.id === id; })[0] || CAT.series[0];
+    destroyPlayer();          // 先存好上一部的進度，再切換
     cur = s;
     var q = ui.q, prog = loadProg();
     q('.shelf').classList.add('hidden'); q('.watch').classList.remove('hidden');
@@ -150,27 +162,48 @@
     q('.body').scrollTop = 0;
     emit('series', { id: s.id });
 
-    var start = prog[s.id] || 0;
-    loadYT().then(function (YT) {
-      if (player && player.loadVideoById) {
-        if (userTap) player.loadVideoById({ videoId: s.videoId, startSeconds: start });
-        else player.cueVideoById({ videoId: s.videoId, startSeconds: start });
-        return;
-      }
-      var el = document.createElement('div'); var slot = q('.yt'); slot.innerHTML = ''; slot.appendChild(el);
+    showPoster(s, prog[s.id] || 0);
+  }
+
+  // 先顯示組件自己的封面（不載入 YouTube），觀眾點了才建立 YouTube 播放器並直接開始播放。
+  // 這樣開場不會出現 YouTube 的標題列與按鈕；播放開始後 YouTube 播放器保持原樣、不遮蓋。
+  function showPoster(s, start) {
+    destroyPlayer();
+    var slot = ui.q('.yt');
+    var res = start > 5 ? '<span class="res">從 ' + fmt(start) + ' 繼續</span>' : '<span>全集 ' + esc(s.duration) + '</span>';
+    slot.innerHTML = '<button class="poster" aria-label="播放 ' + esc(s.title) + '">' +
+      '<img alt="" src="https://i.ytimg.com/vi/' + esc(s.videoId) + '/hqdefault.jpg"><div class="shade"></div>' +
+      '<div class="pbtn"><svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>' +
+      '<div class="ptxt"><b>' + esc(s.title) + '</b>' + res + '</div></button>';
+    slot.querySelector('.poster').onclick = function () { startPlayer(s, start); };
+  }
+
+  function startPlayer(s, start) {
+    var slot = ui.q('.yt');
+    var go = function (YT) {
+      var el = document.createElement('div'); slot.innerHTML = ''; slot.appendChild(el);
       player = new YT.Player(el, {
         width: '100%', height: '100%', videoId: s.videoId,
-        playerVars: { playsinline: 1, rel: 0, start: start, origin: location.origin },
+        playerVars: { autoplay: 1, playsinline: 1, rel: 0, iv_load_policy: 3, start: Math.floor(start), origin: location.origin },
         events: {
-          onReady: function (e) { if (userTap) { try { e.target.playVideo(); } catch (err) {} } },
+          onReady: function (e) { try { e.target.playVideo(); } catch (err) {} },
           onStateChange: function (e) {
+            if (!cur) return;
             if (e.data === 1) { emit('play', { id: cur.id }); startSaving(); }
             if (e.data === 2) { emit('pause', { id: cur.id }); persist(); }
             if (e.data === 0) { saveProg(cur.id, 0); }
           }
         }
       });
-    });
+    };
+    if (window.YT && window.YT.Player) go(window.YT);   // API 已預先載入：在同一次點擊內建立，才能直接播放
+    else loadYT().then(go);
+  }
+
+  function destroyPlayer() {
+    persist(); clearInterval(saveTimer);
+    try { if (player && player.destroy) player.destroy(); } catch (e) {}
+    player = null;
   }
 
   function persist() { try { if (player && cur && player.getCurrentTime) saveProg(cur.id, player.getCurrentTime()); } catch (e) {} }
