@@ -1,0 +1,126 @@
+{
+ "site": "demo-starharbor",
+ "brand": "短劇放映室",
+ "series": [
+  {
+   "id": "XRJIKi7gZiQ",
+   "source": "youtube",
+   "videoId": "XRJIKi7gZiQ",
+   "title": "撿來小福星，全家都把我當寶",
+   "duration": "1:10:13",
+   "tags": [
+    "萌寶",
+    "團寵",
+    "都市"
+   ],
+   "intro": "被陸北辰撿回家後，小滿滿成了全家的心尖寵，三位摯友還爭著當乾爹。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "DOflHrjYRuA",
+   "source": "youtube",
+   "videoId": "DOflHrjYRuA",
+   "title": "離婚後我不再給盛家兜底",
+   "duration": "1:21:59",
+   "tags": [
+    "逆襲",
+    "豪門",
+    "大女主"
+   ],
+   "intro": "婆婆壽宴上羞辱她亡母，丈夫還逼她道歉。她摘下婚戒、停掉黑卡，盛家這才發現豪門全靠她撐著。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "wy1kanre2Nk",
+   "source": "youtube",
+   "videoId": "wy1kanre2Nk",
+   "title": "魔女抽卡：我召喚諸天女魔神",
+   "duration": "1:50:04",
+   "tags": [
+    "異能",
+    "高武",
+    "逆襲"
+   ],
+   "intro": "覺醒 F 級異能被眾人嘲笑，轉眼卻召喚出女魔神，隱藏實力的他要掀翻整個高武世界。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "0oYJERiEJ9g",
+   "source": "youtube",
+   "videoId": "0oYJERiEJ9g",
+   "title": "和弟弟穿越：滿朝文武替我寫休書",
+   "duration": "2:22:42",
+   "tags": [
+    "穿越",
+    "古風",
+    "寵妻"
+   ],
+   "intro": "侯府欺她無依無靠，沒想到五個弟弟都是朝堂大佬；滿朝文武替她寫休書，攝政王卻搶著求娶。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "BUui7mO0ShA",
+   "source": "youtube",
+   "videoId": "BUui7mO0ShA",
+   "title": "小兵竟是女兒身",
+   "duration": "2:07:27",
+   "tags": [
+    "穿越",
+    "系統",
+    "軍營"
+   ],
+   "intro": "穿進軍營，坑人系統只給饅頭破鞋。她一路立功被將軍認作義弟，女兒身卻快藏不住了。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "6p2PB_mKhZQ",
+   "source": "youtube",
+   "videoId": "6p2PB_mKhZQ",
+   "title": "粗野獵戶心尖寵",
+   "duration": "2:35:11",
+   "tags": [
+    "穿書",
+    "種田",
+    "甜寵"
+   ],
+   "intro": "穿書嫁給窮獵戶，她靠系統逆襲暴富，說好搭夥過日子的糙漢，卻把她寵成全鎮最嬌。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "vnwv5dFc0jg",
+   "source": "youtube",
+   "videoId": "vnwv5dFc0jg",
+   "title": "幹活的從來不算功臣",
+   "duration": "1:15:35",
+   "tags": [
+    "職場",
+    "逆襲",
+    "爽劇"
+   ],
+   "intro": "嫌她幹活不算功臣？她一離職，四億鉅製首播就癱瘓，十八分鐘救場後轉身加入對家。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  },
+  {
+   "id": "gIYUVdk1a-0",
+   "source": "youtube",
+   "videoId": "gIYUVdk1a-0",
+   "title": "亂世荒年，我帶三娃屯滿倉肉",
+   "duration": "2:19:16",
+   "tags": [
+    "末世",
+    "種田",
+    "萌娃"
+   ],
+   "intro": "一個饅頭逼她分家，末世特工帶著三個娃囤滿肉，癱瘓的丈夫竟然站了起來。",
+   "channel": "盛世短剧",
+   "channelUrl": "https://www.youtube.com/@ShengshiDrama"
+  }
+ ]
+}
