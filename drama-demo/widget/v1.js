@@ -10,6 +10,8 @@
  *   data-target  容器選擇器，預設 #dj-player
  *   data-series  只播某一部劇（劇 ID）
  *   data-accent  主題色，例如 #7c5cff
+ *   data-autoplay  muted：進站後右下角小窗立刻靜音自動播放（會自動使用浮動版面）
+ *   data-cooldown  觀眾關掉小窗後，幾小時內不再自動播放（預設 12）
  *
  * 網站主頁面可以呼叫：DJWidget.pause() / play() / open() / close()
  * 會在 window 上發出事件：djw:ready、djw:series、djw:play、djw:pause、djw:minimize
@@ -27,8 +29,11 @@
     layout: script.getAttribute('data-layout') || 'auto',
     target: script.getAttribute('data-target') || '#dj-player',
     series: script.getAttribute('data-series') || '',
-    accent: script.getAttribute('data-accent') || '#ff5a3c'
+    accent: script.getAttribute('data-accent') || '#ff5a3c',
+    autoplay: script.getAttribute('data-autoplay') === 'muted',
+    cooldown: parseFloat(script.getAttribute('data-cooldown')) || 12
   };
+  if (cfg.autoplay) cfg.layout = 'float';
   var STORE = 'djw:' + cfg.site;
 
   // ---------------- 小工具 ----------------
@@ -36,6 +41,8 @@
   function loadProg() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
   function saveProg(id, t) { try { var p = loadProg(); p[id] = Math.floor(t); localStorage.setItem(STORE, JSON.stringify(p)); } catch (e) {} }
   function fmt(s) { s = Math.floor(s); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); }
+  function dismissed() { try { return Date.now() < (+localStorage.getItem(STORE + ':off') || 0); } catch (e) { return false; } }
+  function setDismissed() { try { localStorage.setItem(STORE + ':off', String(Date.now() + cfg.cooldown * 3600e3)); } catch (e) {} }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   // ---------------- 樣式（Shadow DOM 內，不會影響網站主頁面） ----------------
@@ -84,7 +91,16 @@
     '.intro{font-size:13px;line-height:1.65;color:#cfcfd8;margin:0 0 6px}',
     '.sec{font-size:12.5px;color:#9a9aab;padding:10px 12px 0}',
     '.note{font-size:10.5px;color:#6f6f80;padding:8px 12px 12px;line-height:1.5}',
-    '.hidden{display:none!important}'
+    '.hidden{display:none!important}',
+    '.mbtn{display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#1f1f29;color:#fff;flex:none}',
+    '.mbtn.acc{background:var(--acc)}',
+    '.root.mini{height:auto}',
+    '.root.mini .body{overflow:hidden;flex:none}',
+    '.root.mini .top{padding:8px 8px 8px 12px}',
+    '.root.mini .brand{font-size:13px;font-weight:600}',
+    '.root.mini .bt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.root.mini .info,.root.mini .sec,.root.mini .more,.root.mini .note,.root.mini .shelf,.root.mini [data-act=back],.root.mini [data-act=min]{display:none!important}',
+    '.root:not(.mini) [data-act=sound],.root:not(.mini) [data-act=expand],.root:not(.mini) [data-act=x]{display:none!important}'
   ].join('');
 
   // ---------------- YouTube IFrame API（只載入一次） ----------------
@@ -109,6 +125,9 @@
       '<div class="root">' +
       ' <div class="top"><button class="ib hidden" data-act="back" aria-label="返回片單"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></button>' +
       '  <div class="brand"><span class="dot"></span><span class="bt">短劇放映室</span></div>' +
+      '  <button class="mbtn acc" data-act="sound">開聲音</button>' +
+      '  <button class="ib" data-act="expand" aria-label="展開"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>' +
+      '  <button class="ib" data-act="x" aria-label="關閉"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6L6 18M6 6l12 12"/></svg></button>' +
       '  <button class="ib hidden" data-act="min" aria-label="收起"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg></button></div>' +
       ' <div class="body">' +
       '  <div class="shelf"><div class="list"></div></div>' +
@@ -121,6 +140,9 @@
     q('[data-act=back]').onclick = showShelf;
     q('[data-act=min]').onclick = function () { pause(); close(); emit('minimize'); };
     if (isFloat) q('[data-act=min]').classList.remove('hidden');
+    q('[data-act=sound]').onclick = toggleSound;
+    q('[data-act=expand]').onclick = expand;
+    q('[data-act=x]').onclick = function () { pause(); setDismissed(); close(); emit('minimize', { dismissed: true }); };
   }
 
   function cardHTML(s, prog) {
@@ -132,7 +154,7 @@
       '<div class="meta"><b>' + esc(s.title) + '</b>' + sub + '</div></button>';
   }
   function bindCards(root) {
-    root.querySelectorAll('.card').forEach(function (b) { b.onclick = function () { openSeries(b.getAttribute('data-id'), true); }; });
+    root.querySelectorAll('.card').forEach(function (b) { b.onclick = function () { openSeries(b.getAttribute('data-id')); }; });
   }
 
   function showShelf() {
@@ -146,7 +168,8 @@
     q('.body').scrollTop = 0;
   }
 
-  function openSeries(id, userTap) {
+  function openSeries(id, opts) {
+    opts = opts || {};
     var s = CAT.series.filter(function (x) { return x.id === id; })[0] || CAT.series[0];
     destroyPlayer();          // 先存好上一部的進度，再切換
     cur = s;
@@ -162,7 +185,8 @@
     q('.body').scrollTop = 0;
     emit('series', { id: s.id });
 
-    showPoster(s, prog[s.id] || 0);
+    if (opts.autoplayMuted) startPlayer(s, prog[s.id] || 0, { muted: true });
+    else showPoster(s, prog[s.id] || 0);
   }
 
   // 先顯示組件自己的封面（不載入 YouTube），觀眾點了才建立 YouTube 播放器並直接開始播放。
@@ -178,15 +202,17 @@
     slot.querySelector('.poster').onclick = function () { startPlayer(s, start); };
   }
 
-  function startPlayer(s, start) {
+  var muted = false;
+  function startPlayer(s, start, opts) {
+    muted = !!(opts && opts.muted); renderSound();
     var slot = ui.q('.yt');
     var go = function (YT) {
       var el = document.createElement('div'); slot.innerHTML = ''; slot.appendChild(el);
       player = new YT.Player(el, {
         width: '100%', height: '100%', videoId: s.videoId,
-        playerVars: { autoplay: 1, playsinline: 1, rel: 0, iv_load_policy: 3, start: Math.floor(start), origin: location.origin },
+        playerVars: { autoplay: 1, mute: muted ? 1 : 0, playsinline: 1, rel: 0, iv_load_policy: 3, start: Math.floor(start), origin: location.origin },
         events: {
-          onReady: function (e) { try { e.target.playVideo(); } catch (err) {} },
+          onReady: function (e) { try { if (muted) e.target.mute(); e.target.playVideo(); } catch (err) {} },
           onStateChange: function (e) {
             if (!cur) return;
             if (e.data === 1) { emit('play', { id: cur.id }); startSaving(); }
@@ -199,6 +225,20 @@
     if (window.YT && window.YT.Player) go(window.YT);   // API 已預先載入：在同一次點擊內建立，才能直接播放
     else loadYT().then(go);
   }
+
+  function renderSound() {
+    if (!ui) return; var b = ui.q('[data-act=sound]');
+    b.textContent = muted ? '開聲音' : '靜音'; b.classList.toggle('acc', muted);
+  }
+  function toggleSound() {
+    try { if (!player) return; if (muted) { player.unMute(); player.setVolume(80); player.playVideo(); } else player.mute(); muted = !muted; renderSound(); } catch (e) {}
+  }
+  function setMini(on) {
+    ui.q('.root').classList.toggle('mini', on);
+    if (panel) panel.classList.toggle('djw-mini', on);
+    ui.q('.bt').textContent = on && cur ? '▶ ' + cur.title : CAT.brand;
+  }
+  function expand() { setMini(false); emit('expand'); }
 
   function destroyPlayer() {
     persist(); clearInterval(saveTimer);
@@ -221,7 +261,9 @@
     '.djw-panel{position:fixed;right:18px;bottom:18px;z-index:2147483001;width:380px;height:min(660px,calc(100vh - 36px));border-radius:16px;',
     ' box-shadow:0 18px 50px rgba(0,0,0,.5);transform:translateY(16px);opacity:0;visibility:hidden;transition:transform .22s,opacity .22s,visibility .22s;pointer-events:none}',
     '.djw-panel.djw-open{transform:none;opacity:1;visibility:visible;pointer-events:auto}',
-    '@media (max-width:640px){.djw-panel{left:0;right:0;bottom:0;width:100%;height:68vh;border-radius:16px 16px 0 0}}'
+    '.djw-panel.djw-mini{height:auto;width:360px}',
+    '@media (max-width:640px){.djw-panel{left:0;right:0;bottom:0;width:100%;height:68vh;border-radius:16px 16px 0 0}',
+    ' .djw-panel.djw-mini{left:12px;right:12px;bottom:12px;width:auto;height:auto;border-radius:14px}}'
   ].join('');
 
   function mountFloat() {
@@ -234,7 +276,7 @@
     panel.appendChild(hostEl);
     document.body.appendChild(launcher); document.body.appendChild(panel);
   }
-  function open() { if (!panel) return; panel.classList.add('djw-open'); launcher.style.display = 'none'; }
+  function open() { if (!panel) return; if (ui && CAT) setMini(false); panel.classList.add('djw-open'); launcher.style.display = 'none'; }
   function close() { if (!panel) return; panel.classList.remove('djw-open'); launcher.style.display = ''; }
 
   function init() {
@@ -247,7 +289,10 @@
       CAT = c;
       CAT.series.forEach(function (s) { var p = s.duration.split(':').map(Number); s.durationSec = p.reduce(function (a, b) { return a * 60 + b; }, 0); });
       ui.q('.bt').textContent = CAT.brand;
-      if (cfg.series) openSeries(cfg.series, false); else showShelf();
+      if (cfg.autoplay && !dismissed()) {
+        var last = loadProg(), pick = cfg.series || Object.keys(last).filter(function (k) { return last[k] > 5; })[0] || CAT.series[0].id;
+        setMini(true); open(); openSeries(pick, { autoplayMuted: true }); setMini(true);
+      } else if (cfg.series) openSeries(cfg.series); else showShelf();
       loadYT();
       emit('ready');
     }).catch(function () { ui.q('.shelf .list').innerHTML = '<p style="color:#999;font-size:13px">片庫載入失敗，請稍後再試。</p>'; });

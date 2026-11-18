@@ -122,6 +122,7 @@
     <div class="modes">
       <button class="mode" data-hash="">側欄模式（預設）</button>
       <button class="mode" data-hash="float">浮動按鈕模式</button>
+      <button class="mode" data-hash="autoplay">進站自動播放小窗</button>
       <button class="mode" data-hash="single">單劇模式</button>
     </div>
     <div class="grid2">
@@ -161,11 +162,12 @@
   });
   const attrs = { 'data-site': 'demo-starharbor', 'data-accent': '#7c5cff' };
   if (mode === 'float') attrs['data-layout'] = 'float';
+  if (mode === 'autoplay') { attrs['data-autoplay'] = 'muted'; attrs['data-cooldown'] = '0.01'; }
   if (mode === 'single') attrs['data-series'] = 'BUui7mO0ShA';
-  const isFloat = mode === 'float' || window.innerWidth < 900;
+  const isFloat = mode === 'float' || mode === 'autoplay' || window.innerWidth < 900;
   document.querySelectorAll('.wide-only').forEach(e => e.style.display = isFloat ? 'none' : '');
   document.querySelectorAll('.narrow-only').forEach(e => e.style.display = isFloat ? '' : 'none');
-  if (mode === 'float') { const a = document.querySelector('aside'); a.style.display = 'none'; document.querySelector('main').style.gridTemplateColumns = 'minmax(0,1fr)'; }
+  if (mode === 'float' || mode === 'autoplay') { const a = document.querySelector('aside'); a.style.display = 'none'; document.querySelector('main').style.gridTemplateColumns = 'minmax(0,1fr)'; }
 
   // 實際載入組件（等同網站主貼上的 <script>）
   const s = document.createElement('script');
@@ -177,6 +179,7 @@
   const esc = t => t.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   let codeTxt = `<div id="dj-player"></div>\n<script async src="https://cdn.你的網域/widget/v1.js"\n  data-site="你的站點密鑰"\n  data-accent="#7c5cff"`;
   if (attrs['data-layout']) codeTxt += `\n  data-layout="float"`;
+  if (attrs['data-autoplay']) codeTxt += `\n  data-autoplay="muted"\n  data-cooldown="12"`;
   if (attrs['data-series']) codeTxt += `\n  data-series="BUui7mO0ShA"`;
   codeTxt += `><\/script>\n\n<!-- 選用：開始遊戲時暫停短劇 -->\n<script>\n  onMatchFound(() => DJWidget.pause());\n<\/script>`;
   document.getElementById('code').innerHTML = esc(codeTxt)
@@ -198,7 +201,8 @@
   window.addEventListener('djw:series', e => addLog(`djw:series　打開劇集 ${e.detail.id}`));
   window.addEventListener('djw:play', e => addLog(`djw:play　開始播放 ${e.detail.id}`));
   window.addEventListener('djw:pause', e => addLog(`djw:pause　暫停 ${e.detail.id}`));
-  window.addEventListener('djw:minimize', () => addLog('djw:minimize　觀眾收起播放器'));
+  window.addEventListener('djw:minimize', e => addLog(e.detail.dismissed ? 'djw:minimize　觀眾關掉自動播放小窗（冷卻期內不再自動播放）' : 'djw:minimize　觀眾收起播放器'));
+  window.addEventListener('djw:expand', () => addLog('djw:expand　觀眾展開小窗'));
 
   // ---------- 假的配對與小遊戲 ----------
   const queue = document.getElementById('queue'), state = document.getElementById('state'), hud = document.getElementById('hud');
