@@ -28,7 +28,7 @@
   .game-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
   .game-head h2{margin:0;font-size:16px}
   .badge{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--panel2);color:var(--acc2);border:1px solid var(--line)}
-  .arena{position:relative;height:440px;overflow:hidden;background:radial-gradient(ellipse at 50% 120%,#2b1f6b 0%,#0b0f1e 60%)}
+  .arena{position:relative;height:440px;background:#fff}
   @media (max-width:899px){ .arena{height:400px} }
   canvas{position:absolute;inset:0;width:100%;height:100%}
   .queue{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px}
@@ -87,21 +87,8 @@
 
 <main>
   <section class="game">
-    <div class="game-head"><h2>排位賽 · 3v3 星域爭奪</h2><span class="badge" id="state">配對中</span></div>
-    <div class="arena">
-      <canvas id="cv"></canvas>
-      <div class="hud" id="hud">對局進行中 · 擊落 <b id="score">0</b></div>
-      <div class="queue" id="queue">
-        <div class="ringwrap"><div class="ring"></div><div class="timer" id="timer">0:00</div></div>
-        <h3>正在為你尋找對手…</h3>
-        <p>預估等待時間 2:30</p>
-        <div class="tip" id="tipText">等待的時候，可以在<span class="wide-only">右邊</span><span class="narrow-only">右下角</span>看一集短劇 →</div>
-        <div class="qbtns">
-          <button class="btn ghost" id="cancel">取消配對</button>
-          <button class="btn" id="found">模擬配對成功</button>
-        </div>
-      </div>
-    </div>
+    <div class="game-head"><h2>排位賽 · 3v3 星域爭奪</h2></div>
+    <div class="arena" aria-label="遊戲畫面"></div>
     <div class="cards">
       <div class="gcard"><b>本週活動</b><span>連勝 3 場送限定外觀</span></div>
       <div class="gcard"><b>賽季排名</b><span>鑽石 II · 再 120 分晉級</span></div>
@@ -118,7 +105,7 @@
 <section class="doc">
   <div class="docbox">
     <h2>網站主怎麼嵌入</h2>
-    <p>貼上兩行代碼就能用。組件會依螢幕寬度自動切換：電腦版嵌在側欄，手機版變成右下角的浮動按鈕。配對成功、開始遊戲時，網站可以自動暫停短劇。影片用 YouTube 官方播放器播放，觀看次數和廣告收益歸原頻道。</p>
+    <p>貼上兩行代碼就能用。組件會依螢幕寬度自動切換：電腦版嵌在側欄，手機版變成右下角的浮動按鈕。開始遊戲時，網站可以呼叫 DJWidget.pause() 自動暫停短劇。影片用 YouTube 官方播放器播放，觀看次數和廣告收益歸原頻道。</p>
     <div class="modes">
       <button class="mode" data-hash="">側欄模式（預設）</button>
       <button class="mode" data-hash="float">浮動按鈕模式</button>
@@ -138,7 +125,7 @@
           <li>保留 YouTube 播放器原本的功能與標示</li>
           <li>看劇時下方推薦「接著看」</li>
           <li>主題色跟著網站走（<code>data-accent</code>）</li>
-          <li>配對成功時呼叫 <code>DJWidget.pause()</code> 自動暫停</li>
+          <li>開始遊戲時可呼叫 <code>DJWidget.pause()</code> 自動暫停</li>
           <li>網站可收到播放事件，用於統計</li>
         </ul>
         <div class="log" id="log"><span class="t">— 組件事件會顯示在這裡 —</span></div>
@@ -204,47 +191,6 @@
   window.addEventListener('djw:minimize', e => addLog(e.detail.dismissed ? 'djw:minimize　觀眾關掉自動播放小窗（冷卻期內不再自動播放）' : 'djw:minimize　觀眾收起播放器'));
   window.addEventListener('djw:expand', () => addLog('djw:expand　觀眾展開小窗'));
 
-  // ---------- 假的配對與小遊戲 ----------
-  const queue = document.getElementById('queue'), state = document.getElementById('state'), hud = document.getElementById('hud');
-  let sec = 0, qTimer = null, playing = false, score = 0;
-  function startQueue(){
-    sec = 0; playing = false; queue.style.display = ''; hud.style.display = 'none'; state.textContent = '配對中';
-    clearInterval(qTimer);
-    qTimer = setInterval(() => { sec++; document.getElementById('timer').textContent = Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0'); }, 1000);
-  }
-  function matchFound(){
-    clearInterval(qTimer); playing = true; score = 0; document.getElementById('score').textContent = 0;
-    queue.style.display = 'none'; hud.style.display = 'block'; state.textContent = '對局中';
-    if (window.DJWidget) DJWidget.pause();                 // ← 開始遊戲時自動暫停短劇
-    addLog('網站呼叫 DJWidget.pause()　配對成功，自動暫停');
-    setTimeout(() => { if (playing) { addLog('對局結束，回到配對'); startQueue(); } }, 20000);
-  }
-  document.getElementById('found').onclick = matchFound;
-  document.getElementById('cancel').onclick = startQueue;
-
-  // 星空背景 + 對局時可以點擊的目標
-  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-  let W, H, stars = [], targets = [];
-  function size(){ const r = cv.getBoundingClientRect(); W = cv.width = r.width * devicePixelRatio; H = cv.height = r.height * devicePixelRatio; }
-  size(); addEventListener('resize', size);
-  for (let i = 0; i < 140; i++) stars.push({x: Math.random(), y: Math.random(), z: Math.random()*0.8+0.2});
-  cv.addEventListener('pointerdown', e => {
-    if (!playing) return;
-    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * devicePixelRatio, y = (e.clientY - r.top) * devicePixelRatio;
-    targets = targets.filter(t => { const hit = Math.hypot(t.x - x, t.y - y) < t.r + 10*devicePixelRatio; if (hit) document.getElementById('score').textContent = ++score; return !hit; });
-  });
-  (function loop(){
-    ctx.clearRect(0,0,W,H);
-    stars.forEach(s => { s.y += 0.0009 * s.z * (playing ? 4 : 1); if (s.y > 1) s.y = 0;
-      ctx.fillStyle = `rgba(200,210,255,${s.z})`; ctx.fillRect(s.x*W, s.y*H, 1.6*s.z*devicePixelRatio, 1.6*s.z*devicePixelRatio); });
-    if (playing) {
-      if (Math.random() < 0.035) targets.push({x: Math.random()*W*0.8 + W*0.1, y: -20, r: (12 + Math.random()*10)*devicePixelRatio, v: (1 + Math.random()*1.5)*devicePixelRatio});
-      targets.forEach(t => { t.y += t.v; ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, 7); ctx.fillStyle = '#22d3ee'; ctx.shadowColor = '#22d3ee'; ctx.shadowBlur = 16; ctx.fill(); ctx.shadowBlur = 0; });
-      targets = targets.filter(t => t.y < H + 30);
-    }
-    requestAnimationFrame(loop);
-  })();
-  startQueue();
 })();
 </script>
 </body>
